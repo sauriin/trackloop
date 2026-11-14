@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight, CalendarDays, Hand } from "lucide-react";
 import { dayTotals, openItems, portfolio } from "@/lib/derive";
 import { greeting, money, prettyDate, todayISO } from "@/lib/dates";
 import { update, uid, useAppState } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { OpenItem } from "@/lib/derive";
 import { Card, CardHead, Empty, Pill, Progress, Stat } from "./ui";
 
@@ -59,30 +61,51 @@ export function Dashboard() {
       });
     });
     form.reset();
+    toast("Task added");
   }
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-3xl border border-green/20 bg-[linear-gradient(155deg,#16241f_0%,#121a24_62%,#101821_100%)] p-5 shadow-[0_24px_50px_-34px_rgba(74,222,128,0.45)]">
-        <div className="absolute -right-16 -top-24 h-56 w-56 rounded-full bg-green/15 blur-3xl" aria-hidden="true" />
-        <p className="text-[11px] uppercase tracking-[0.1em] text-ink/60" suppressHydrationWarning>
-          {prettyDate(today)}
-        </p>
-        <h1 className="mt-2 text-[27px] font-semibold leading-tight tracking-[-0.025em]" suppressHydrationWarning>
-          {greeting()} 👋
-        </h1>
-        <p className="mt-1 text-[13px] text-muted">
-          {items.length} open item{items.length === 1 ? "" : "s"} · {doneToday} done today
-        </p>
+      <section className="relative overflow-hidden rounded-[26px] border border-accent/25 bg-[linear-gradient(145deg,#2b1727_0%,#1c1230_54%,#120e1c_100%)] p-5 shadow-[0_30px_60px_-40px_rgba(255,90,43,0.6)]">
+        <div className="absolute -right-20 -top-24 h-60 w-60 rounded-full bg-accent/20 blur-3xl" aria-hidden="true" />
+        <div className="absolute -left-16 bottom-[-80px] h-48 w-48 rounded-full bg-orchid/15 blur-3xl" aria-hidden="true" />
+
+        <div className="relative">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10.5px] uppercase tracking-[0.14em] text-ink/70"
+            suppressHydrationWarning
+          >
+            <CalendarDays size={12} aria-hidden="true" />
+            {prettyDate(today)}
+          </span>
+          <h1 className="mt-3 text-[27px] font-semibold leading-tight tracking-[-0.025em]" suppressHydrationWarning>
+            {greeting()}
+            <Hand className="ml-1 inline-block h-6 w-6 -translate-y-0.5 text-amber" aria-hidden="true" />
+          </h1>
+          <p className="mt-1 text-[13px] text-ink/65">
+            {items.length} open item{items.length === 1 ? "" : "s"} · {doneToday} done today
+          </p>
+
+          <div className="mt-4 grid gap-1.5">
+            <div className="flex items-baseline justify-between text-[11px] uppercase tracking-[0.1em] text-ink/55">
+              <span>Today’s momentum</span>
+              <span className="tabular-nums">
+                {doneToday}/{items.length + doneToday}
+              </span>
+            </div>
+            <Progress value={items.length + doneToday ? (doneToday / (items.length + doneToday)) * 100 : 0} />
+          </div>
+        </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <Stat label="Open tasks" value={items.length} />
         <Stat label="Calories" value={money(food.calories)} sub={money(state.goals.calories)} />
         <Stat label="Protein" value={`${Math.round(food.protein)}g`} sub={`${state.goals.protein}g`} />
         <Stat label="Portfolio" value={money(port.current)} sub="current" />
       </div>
 
+      <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr] lg:items-start">
       <Card>
         <CardHead title="Today’s list" right={`${items.length} item${items.length === 1 ? "" : "s"}`} />
         {items.length ? (
@@ -107,7 +130,7 @@ export function Dashboard() {
             ))}
           </ul>
         ) : (
-          <Empty>Nothing open. Add a task below or enjoy the quiet. 🌤️</Empty>
+          <Empty>Nothing open. Add a task below or enjoy the quiet.</Empty>
         )}
 
         <form
@@ -127,8 +150,9 @@ export function Dashboard() {
       <Card>
         <div className="card-head">
           <h2 className="text-[15px] font-semibold">Fuel &amp; money</h2>
-          <Link href="/nutrition" className="text-[12.5px] text-muted">
-            Details →
+          <Link href="/nutrition" className="inline-flex items-center gap-1 text-[12.5px] text-muted">
+            Details
+            <ArrowRight size={13} aria-hidden="true" />
           </Link>
         </div>
 
@@ -163,6 +187,7 @@ export function Dashboard() {
           </Pill>
         </div>
       </Card>
+      </div>
     </>
   );
 }

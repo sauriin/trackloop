@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import { dayLabel, money, num, shiftISO, todayISO } from "@/lib/dates";
 import { dayTotals, entryCalories } from "@/lib/derive";
 import { update, uid, useAppState } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { Meal } from "@/lib/types";
 import { Card, CardHead, Empty, Progress } from "./ui";
 
@@ -49,6 +51,7 @@ export function NutritionBoard() {
       });
     });
     form.reset();
+    toast("Food logged");
   }
 
   function saveGoals(form: HTMLFormElement) {
@@ -61,6 +64,7 @@ export function NutritionBoard() {
         fat: num(data.get("fat")),
       };
     });
+    toast("Goals updated");
   }
 
   function removeEntry(id: string) {
@@ -71,6 +75,7 @@ export function NutritionBoard() {
 
   return (
     <>
+      <div className="grid gap-3.5 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHead
           title="Nutrition"
@@ -99,7 +104,7 @@ export function NutritionBoard() {
           </div>
           <div className="text-right">
             <p className="text-xs text-muted">{remaining >= 0 ? "Remaining" : "Over"}</p>
-            <p className={`text-xl font-bold tabular-nums ${remaining >= 0 ? "text-green" : "text-red"}`}>
+            <p className={`text-xl font-bold tabular-nums ${remaining >= 0 ? "text-accent" : "text-red"}`}>
               {money(Math.abs(remaining))}
             </p>
           </div>
@@ -144,7 +149,9 @@ export function NutritionBoard() {
           </div>
         </form>
       </Card>
+      </div>
 
+      <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr] lg:items-start">
       <Card>
         <CardHead title={<span className="text-[15px]">Logged</span>} right={`${entries.length} item${entries.length === 1 ? "" : "s"}`} />
         {entries.length ? (
@@ -163,7 +170,7 @@ export function NutritionBoard() {
                   aria-label={`Delete ${entry.name}`}
                   className="grid h-[30px] w-[30px] flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-[14px] text-muted hover:bg-red/10 hover:text-red"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -206,6 +213,7 @@ export function NutritionBoard() {
           </button>
         </form>
       </Card>
+      </div>
     </>
   );
 }

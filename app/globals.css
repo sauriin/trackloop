@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0a0e14;
-  --color-bg-soft: #0f151d;
-  --color-surface: #151c25;
-  --color-surface-2: #1b2430;
-  --color-line: rgba(255, 255, 255, 0.08);
+  --color-bg: #0b0812;
+  --color-bg-soft: #110d1b;
+  --color-surface: #181227;
+  --color-surface-2: #201933;
+  --color-line: rgba(255, 255, 255, 0.075);
   --color-line-strong: rgba(255, 255, 255, 0.14);
-  --color-ink: #eaf0f7;
-  --color-muted: #8b9aab;
-  --color-green: #4ade80;
-  --color-green-deep: #34d072;
-  --color-sky: #38bdf8;
+  --color-ink: #f5eefb;
+  --color-muted: #a196b4;
+  --color-accent: #ff7a4d;
+  --color-accent-deep: #ff5a2b;
+  --color-accent-soft: #ffb08a;
+  --color-orchid: #e879f9;
+  --color-sky: #7dd3fc;
   --color-amber: #fbbf24;
-  --color-red: #f87171;
-  --radius-card: 20px;
+  --color-red: #fb7185;
+  --radius-card: 22px;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
@@ -27,8 +29,12 @@
   body {
     background-color: var(--color-bg);
     background-image:
-      radial-gradient(680px 380px at 12% -8%, rgba(74, 222, 128, 0.1), transparent 70%),
-      radial-gradient(720px 420px at 92% 2%, rgba(56, 189, 248, 0.09), transparent 72%);
+      radial-gradient(900px 520px at 6% -10%, rgba(255, 122, 77, 0.18), transparent 62%),
+      radial-gradient(760px 500px at 100% -2%, rgba(232, 121, 249, 0.14), transparent 68%),
+      radial-gradient(900px 620px at 50% 115%, rgba(125, 211, 252, 0.08), transparent 70%),
+      linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: auto, auto, auto, 100% 56px, 56px 100%;
     background-attachment: fixed;
     color: var(--color-ink);
     font-family: var(--font-sans);
@@ -37,7 +43,7 @@
   }
 
   ::selection {
-    background: rgba(74, 222, 128, 0.28);
+    background: rgba(255, 122, 77, 0.32);
   }
 
   input,
@@ -61,8 +67,11 @@
 
 @layer components {
   .card {
-    @apply rounded-card border border-line bg-surface/90 p-4 shadow-[0_18px_40px_-32px_rgba(0,0,0,0.9)];
-    background-image: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg-soft) 100%);
+    @apply relative rounded-card border border-line p-4;
+    background-image: linear-gradient(165deg, #1b152b 0%, #130f1e 72%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      0 26px 50px -38px rgba(0, 0, 0, 0.95);
   }
 
   .card-head {
@@ -71,13 +80,13 @@
 
   .stat {
     @apply relative overflow-hidden rounded-2xl border border-line p-3.5;
-    background-image: linear-gradient(180deg, var(--color-surface-2) 0%, #141b24 100%);
+    background-image: linear-gradient(170deg, var(--color-surface-2) 0%, #171125 100%);
   }
 
   .stat::before {
     content: "";
     @apply absolute left-0 top-0 h-0.5 w-9;
-    background: linear-gradient(90deg, var(--color-green), transparent);
+    background: linear-gradient(90deg, var(--color-accent), transparent);
   }
 
   .stat-k {
@@ -89,15 +98,15 @@
   }
 
   .input {
-    @apply w-full min-h-11 rounded-xl border border-line-strong bg-[#10171f] px-3 py-2.5 outline-none transition;
+    @apply w-full min-h-11 rounded-xl border border-line-strong bg-[#120d1e] px-3 py-2.5 outline-none transition;
   }
 
   .input:focus {
-    @apply border-sky/60 ring-3 ring-sky/15;
+    @apply border-accent/60 ring-3 ring-accent/15;
   }
 
   .input::placeholder {
-    @apply text-muted/75;
+    @apply text-muted/70;
   }
 
   select.input {
@@ -111,12 +120,12 @@
   }
 
   .btn {
-    @apply inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-line-strong bg-surface-2 px-4 py-2.5 font-semibold transition active:scale-[0.98];
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-line-strong bg-surface-2 px-4 py-2.5 font-semibold transition active:scale-[0.98];
   }
 
   .btn-primary {
-    @apply border-transparent text-[#04160c] shadow-[0_12px_26px_-16px_rgba(74,222,128,0.8)];
-    background-image: linear-gradient(180deg, #5ee98d 0%, #34d072 100%);
+    @apply border-transparent text-[#2b0f05] shadow-[0_14px_30px_-16px_rgba(255,90,43,0.75)];
+    background-image: linear-gradient(160deg, #ffb08a 0%, #ff7a4d 45%, #ff5a2b 100%);
   }
 
   .btn-ghost {
@@ -124,7 +133,7 @@
   }
 
   .btn-active {
-    @apply border-green/40 bg-green/15 text-green shadow-none;
+    @apply border-accent/40 bg-accent/15 text-accent shadow-none;
   }
 
   .btn-sm {
@@ -132,11 +141,13 @@
   }
 
   .item {
-    @apply flex items-start gap-2.5 rounded-[14px] border border-line bg-surface-2 px-3.5 py-3 transition;
+    @apply flex items-start gap-2.5 rounded-[14px] border border-line px-3.5 py-3 transition;
+    background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
   }
 
   .item:hover {
     @apply border-line-strong;
+    background-image: linear-gradient(160deg, rgba(255, 122, 77, 0.08), rgba(255, 255, 255, 0.015));
   }
 
   .check {
@@ -144,12 +155,12 @@
   }
 
   .check:checked {
-    @apply border-green bg-green;
+    @apply border-accent bg-accent;
   }
 
   .check:checked::after {
     content: "✓";
-    @apply block text-center text-[15px] font-extrabold leading-[21px] text-[#04160c];
+    @apply block text-center text-[15px] font-extrabold leading-[21px] text-[#2b0f05];
   }
 
   .pill {
@@ -161,16 +172,16 @@
   }
 
   .pill-ok {
-    @apply border-green/40 bg-green/10 text-green;
+    @apply border-accent/40 bg-accent/10 text-accent-soft;
   }
 
   .bar {
-    @apply h-[9px] overflow-hidden rounded-full border border-line bg-[#0b1118];
+    @apply h-[9px] overflow-hidden rounded-full border border-line bg-[#0d0917];
   }
 
   .bar-fill {
-    @apply block h-full rounded-full transition-[width] duration-300;
-    background-image: linear-gradient(90deg, #34d072, #6ee7a3);
+    @apply block h-full rounded-full transition-[width] duration-500;
+    background-image: linear-gradient(90deg, #ff5a2b, #ffb08a);
   }
 
   .empty {
@@ -181,12 +192,52 @@
     @apply text-[10.5px] uppercase tracking-[0.08em] text-muted;
   }
 
+  .nav-link {
+    @apply relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-muted transition hover:bg-white/[0.04] hover:text-ink;
+  }
+
+  .nav-link[data-active="true"] {
+    color: var(--tint, var(--color-accent));
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--tint, var(--color-accent)) 16%, transparent),
+      color-mix(in srgb, var(--tint, var(--color-accent)) 3%, transparent)
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint, var(--color-accent)) 28%, transparent);
+  }
+
   .tab-link {
-    @apply grid justify-items-center gap-[3px] rounded-[15px] px-0 pb-1.5 pt-[7px] text-[10px] font-medium text-muted transition;
+    @apply relative grid justify-items-center gap-1 rounded-[15px] px-0 pb-1.5 pt-[7px] text-[10px] font-medium text-muted transition;
   }
 
   .tab-link[data-active="true"] {
-    @apply bg-green/10 text-green shadow-[inset_0_0_0_1px_rgba(74,222,128,0.22)];
+    color: var(--tint, var(--color-accent));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tint, var(--color-accent)) 16%, transparent),
+      color-mix(in srgb, var(--tint, var(--color-accent)) 3%, transparent)
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint, var(--color-accent)) 28%, transparent);
+  }
+
+  .tab-link svg,
+  .nav-link svg {
+    @apply flex-none;
+  }
+
+  .toast {
+    animation: toast-in 180ms ease-out;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 

@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { toast } from "./toast";
 import type { AppState } from "./types";
 
+/**
+ * App state lives in the local SQLite database through /api/state.
+ * localStorage is kept as an offline cache: it paints instantly, survives a
+ * dropped connection, and seeds the database with data from the old version.
+ */
 export const STORAGE_KEY = "trackloop.v1";
+const API_URL = "/api/state";
 
 export const DEFAULT_STATE: AppState = {
   version: 1,
@@ -17,6 +24,8 @@ export const DEFAULT_STATE: AppState = {
 
 let state: AppState = DEFAULT_STATE;
 let hydrated = false;
+let loaded = false;
+let changedBeforeLoad = false;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -52,38 +61,121 @@ function normalize(saved: Partial<AppState> | null): AppState {
   };
 }
 
-function load() {
+function readCache(): AppState | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    state = normalize(JSON.parse(raw) as Partial<AppState>);
-    emit();
+    return raw ? normalize(JSON.parse(raw) as Partial<AppState>) : null;
   } catch (err) {
-    console.warn("Could not read saved data", err);
+    console.warn("Could not read browser cache", err);
+    return null;
   }
 }
 
-function persist() {
+function writeCache() {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (err) {
-    console.warn("Could not save data", err);
+    console.warn("Could not write browser cache", err);
   }
 }
 
-/** Apply a mutation, persist it and re-render subscribers. */
+let saveTimer: number | null = null;
+let saving = false;
+let dirty = false;
+let lastSaveFailed = false;
+
+async function persistNow() {
+  if (!hydrated) return;
+  if (saving) {
+    dirty = true;
+    return;
+  }
+  saving = true;
+  try {
+    const response = await fetch(API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state }),
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (lastSaveFailed) {
+      lastSaveFailed = false;
+      toast("Database reconnected — your changes are saved.", "success");
+    }
+  } catch (err) {
+    console.warn("Local database unavailable — changes kept in the browser cache.", err);
+    if (!lastSaveFailed) {
+      lastSaveFailed = true;
+      toast("Couldn't save to the local database — kept in the browser.", "error");
+    }
+  } finally {
+    saving = false;
+    if (dirty) {
+      dirty = false;
+      void persistNow();
+    }
+  }
+}
+
+function schedulePersist() {
+  if (!hydrated) return;
+  writeCache();
+  if (!loaded) {
+    changedBeforeLoad = true;
+    return;
+  }
+  if (saveTimer !== null) window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => {
+    saveTimer = null;
+    void persistNow();
+  }, 400);
+}
+
+async function load() {
+  // Paint from the last browser copy while the database responds.
+  const cached = readCache();
+  if (cached) {
+    state = cached;
+    emit();
+  }
+
+  try {
+    const response = await fetch(API_URL, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = (await response.json()) as { state: AppState | null };
+    if (payload.state) {
+      state = normalize(payload.state);
+      writeCache();
+      emit();
+    } else if (cached) {
+      // First run with the database: move existing browser data into SQLite.
+      changedBeforeLoad = true;
+    }
+  } catch (err) {
+    console.warn("Could not read the local database — using the browser cache.", err);
+  } finally {
+    loaded = true;
+    if (changedBeforeLoad) {
+      changedBeforeLoad = false;
+      void persistNow();
+    }
+  }
+}
+
+/** Apply a mutation, cache it immediately and save to the local database. */
 export function update(mutator: (draft: AppState) => void) {
   const next = structuredClone(state);
   mutator(next);
   state = next;
-  if (hydrated) persist();
+  schedulePersist();
   emit();
 }
 
 /**
  * Subscribe a component to the store.
  * The first client render uses the defaults so it matches the server HTML;
- * saved data is loaded right after mount.
+ * the database (or offline cache) is loaded right after mount.
  */
 export function useAppState(): AppState {
   const snapshot = useSyncExternalStore(
@@ -95,7 +187,22 @@ export function useAppState(): AppState {
   useEffect(() => {
     if (hydrated) return;
     hydrated = true;
-    load();
+    void load();
+
+    const flush = () => {
+      if (saveTimer !== null) {
+        window.clearTimeout(saveTimer);
+        saveTimer = null;
+        void persistNow();
+      }
+    };
+    const retry = () => void persistNow();
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("online", retry);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("online", retry);
+    };
   }, []);
 
   return snapshot;

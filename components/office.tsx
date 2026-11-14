@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import { dayLabel, todayISO } from "@/lib/dates";
 import { update, uid, useAppState } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { OfficeTask, Priority } from "@/lib/types";
 import { Card, CardHead, Empty, Pill } from "./ui";
 
@@ -43,6 +45,7 @@ export function OfficeBoard() {
       });
     });
     form.reset();
+    toast("Task added");
   }
 
   function toggle(id: string, done: boolean) {
@@ -62,6 +65,8 @@ export function OfficeBoard() {
 
   return (
     <>
+      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] lg:items-start">
+      <div className="grid gap-3.5">
       <Card>
         <CardHead
           title="Office"
@@ -109,6 +114,7 @@ export function OfficeBoard() {
           </button>
         ))}
       </div>
+      </div>
 
       <Card>
         {visible.length ? (
@@ -139,7 +145,7 @@ export function OfficeBoard() {
                   aria-label={`Delete ${task.title}`}
                   className="grid h-[30px] w-[30px] flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-[14px] text-muted hover:bg-red/10 hover:text-red"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -148,6 +154,7 @@ export function OfficeBoard() {
           <Empty>{filter === "done" ? "No finished tasks yet." : "No tasks here. Add one above."}</Empty>
         )}
       </Card>
+      </div>
 
       <p className="px-1 text-xs text-muted">Tasks due today and overdue ones also appear on the Today screen.</p>
     </>

@@ -1,8 +1,10 @@
 "use client";
 
+import { TrendingDown, TrendingUp, X } from "lucide-react";
 import { money, num } from "@/lib/dates";
 import { portfolio } from "@/lib/derive";
 import { update, uid, useAppState } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { HoldingType } from "@/lib/types";
 import { Card, CardHead, Empty, Pill, Progress } from "./ui";
 
@@ -33,6 +35,7 @@ export function MoneyBoard() {
       });
     });
     form.reset();
+    toast("Holding added");
   }
 
   function setCurrent(id: string, value: string) {
@@ -50,6 +53,7 @@ export function MoneyBoard() {
 
   return (
     <>
+      <div className="grid gap-3.5 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHead
           title="Investments"
@@ -59,8 +63,9 @@ export function MoneyBoard() {
         <p className="text-3xl font-bold tracking-tight tabular-nums">{money(port.current)}</p>
         <div className="mt-1.5 flex items-baseline justify-between text-[13px]">
           <span className="text-muted">Invested {money(port.invested)}</span>
-          <span className={port.pl >= 0 ? "text-green" : "text-red"}>
-            {port.pl >= 0 ? "▲" : "▼"} {money(Math.abs(port.pl))}
+          <span className={`inline-flex items-center gap-1 ${port.pl >= 0 ? "text-accent" : "text-red"}`}>
+            {port.pl >= 0 ? <TrendingUp size={14} aria-hidden="true" /> : <TrendingDown size={14} aria-hidden="true" />}
+            {money(Math.abs(port.pl))}
           </span>
         </div>
       </Card>
@@ -85,7 +90,9 @@ export function MoneyBoard() {
           <Empty>Add a holding to see your allocation.</Empty>
         )}
       </Card>
+      </div>
 
+      <div className="grid gap-3.5 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHead title={<span className="text-[15px]">Add holding</span>} />
         <form
@@ -154,7 +161,7 @@ export function MoneyBoard() {
                     aria-label={`Delete ${holding.name}`}
                     className="grid h-[30px] w-[30px] flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-[14px] text-muted hover:bg-red/10 hover:text-red"
                   >
-                    ✕
+                    <X size={15} aria-hidden="true" />
                   </button>
                 </li>
               );
@@ -164,6 +171,7 @@ export function MoneyBoard() {
           <Empty>No holdings yet.</Empty>
         )}
       </Card>
+      </div>
 
       <p className="px-1 text-xs text-muted">Edit a value field to refresh its current worth — totals update instantly.</p>
     </>

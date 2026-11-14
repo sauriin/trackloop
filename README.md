@@ -52,7 +52,9 @@ TrackLoop checks reminders every 20 seconds while the app is open (and again whe
 
 ## Data & privacy
 
-Everything is stored locally under the `trackloop.v1` key in `localStorage`. Clearing site data or using another browser starts empty. Nothing is sent anywhere.
+Everything is stored in a local SQLite database at `data/trackloop.db` (git-ignored), accessed through `/api/state` on the same machine. `localStorage` is only an offline cache of the latest state, and existing browser data is migrated into SQLite on first load. Nothing leaves your machine.
+
+To reset everything, stop the app and delete `data/trackloop.db`; the browser cache is replaced on the next save.
 
 ## Project structure
 
@@ -63,6 +65,7 @@ app/
   manifest.ts       web app manifest (/manifest.webmanifest)
   page.tsx          Today
   office|gym|nutrition|money|alerts/page.tsx
+  api/state/route.ts  GET/PUT the local database state
 components/
   app-shell.tsx     header, bottom nav, SW registration, reminder ticker
   dashboard.tsx     Today screen
@@ -70,7 +73,8 @@ components/
   ui.tsx            card / stat / progress / pill primitives
 lib/
   types.ts          shared data model
-  store.ts          localStorage store + useAppState()
+  store.ts          store + useAppState() (SQLite API with browser cache)
+  db.ts             local SQLite database (node:sqlite, server-only)
   derive.ts         totals, portfolio, streak, today's open items
   dates.ts          local-time date and number helpers
   notifications.ts  occurrence math, permission, due-reminder ticker

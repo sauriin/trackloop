@@ -1,8 +1,10 @@
 "use client";
 
+import { X } from "lucide-react";
 import { dayLabel, num, todayISO } from "@/lib/dates";
 import { gymStreak, gymWeek } from "@/lib/derive";
 import { update, uid, useAppState } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { GymFocus } from "@/lib/types";
 import { Card, CardHead, Empty, Stat } from "./ui";
 
@@ -30,6 +32,7 @@ export function GymBoard() {
       });
     });
     form.reset();
+    toast("Session logged");
   }
 
   function toggle(id: string, done: boolean) {
@@ -57,6 +60,7 @@ export function GymBoard() {
         </div>
       </Card>
 
+      <div className="grid gap-3.5 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHead title={<span className="text-[15px]">Log a session</span>} />
         <form
@@ -122,7 +126,7 @@ export function GymBoard() {
                   aria-label="Delete session"
                   className="grid h-[30px] w-[30px] flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-[14px] text-muted hover:bg-red/10 hover:text-red"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -131,6 +135,7 @@ export function GymBoard() {
           <Empty>No sessions yet. Log your first one above.</Empty>
         )}
       </Card>
+      </div>
     </>
   );
 }

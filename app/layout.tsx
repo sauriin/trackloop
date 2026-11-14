@@ -27,14 +27,24 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0a0e14",
+  themeColor: "#0b0812",
   colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="min-h-dvh pb-28">
+      <body className="min-h-dvh">
+        {process.env.NODE_ENV !== "production" && (
+          // Dev-only: a leftover service worker can serve stale chunks and break
+          // hydration. Run before the app so a broken bundle can still recover.
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})})}",
+            }}
+          />
+        )}
         <AppShell>{children}</AppShell>
       </body>
     </html>

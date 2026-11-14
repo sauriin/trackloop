@@ -1,5 +1,5 @@
 /* TrackLoop service worker: offline shell + notification display. */
-const CACHE = "trackloop-v3";
+const CACHE = "trackloop-v5";
 const ROUTES = ["/", "/office", "/gym", "/nutrition", "/money", "/alerts"];
 const ASSETS = ["/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
 
@@ -42,22 +42,31 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Hashed build assets: cache first.
+  // Build assets: network first so a rebuild never leaves stale JS running
+  // against fresh HTML (a hydration mismatch in dev), cached copy for offline.
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
+      fetch(request)
+        .then((response) => {
           if (response.ok) {
             const copy = response.clone();
             caches.open(CACHE).then((cache) => cache.put(request, copy));
           }
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match(request).then((cached) => cached || Response.error()))
     );
     return;
   }
+
+  // RSC/data requests must always be fresh; never serve these from cache.
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(fetch(request).catch(() => caches.match(request).then((cached) => cached || Response.error())));
+    return;
+  }
+
+  // Local database API: always go to the server, never cache a stale state.
+  if (url.pathname.startsWith("/api/")) return;
 
   // Everything else: stale-while-revalidate.
   event.respondWith(

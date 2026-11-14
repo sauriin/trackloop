@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { todayISO } from "@/lib/dates";
 import {
   checkDueReminders,
@@ -11,6 +12,7 @@ import {
   showNotification,
 } from "@/lib/notifications";
 import { update, uid, useAppState } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import type { Repeat } from "@/lib/types";
 import { Card, CardHead, Empty, Pill } from "./ui";
 
@@ -57,6 +59,7 @@ export function AlertsBoard() {
       });
     });
     form.reset();
+    toast("Reminder added");
   }
 
   function toggle(id: string, done: boolean) {
@@ -82,10 +85,12 @@ export function AlertsBoard() {
       return;
     }
     await showNotification("Notifications enabled 🎉", "TrackLoop will alert you when a reminder is due.", "trackloop-welcome");
+    toast("Notifications enabled");
   }
 
   return (
     <>
+      <div className="grid gap-3.5 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHead title="Reminders" right={`${active} active`} />
         <form
@@ -160,6 +165,7 @@ export function AlertsBoard() {
           needs a server — see the README.
         </p>
       </Card>
+      </div>
 
       <Card>
         <CardHead title={<span className="text-[15px]">Scheduled</span>} right={reminders.length} />
@@ -198,7 +204,7 @@ export function AlertsBoard() {
                   aria-label={`Delete ${reminder.title}`}
                   className="grid h-[30px] w-[30px] flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-[14px] text-muted hover:bg-red/10 hover:text-red"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               </li>
             ))}
