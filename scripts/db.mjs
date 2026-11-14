@@ -1,5 +1,5 @@
 // Peek inside the local SQLite database.
-//   npm run db          -> summary of what is saved
+//   npm run db          -> every saved record, section by section
 //   npm run db -- --raw -> the stored JSON exactly as written
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -28,17 +28,67 @@ if (raw) {
 }
 
 const state = JSON.parse(row.data);
-const count = (list) => (Array.isArray(list) ? list.length : 0);
-const done = (list) => (Array.isArray(list) ? list.filter((item) => item.done).length : 0);
+const list = (value) => (Array.isArray(value) ? value : []);
+const money = (n) => {
+  const value = Number(n || 0);
+  return `${value < 0 ? "-" : ""}$${Math.abs(value).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+};
+const pad = (text, width) => String(text ?? "").padEnd(width).slice(0, width);
+
+function section(title, rows, header, toLine) {
+  console.log("");
+  console.log(`${title} — ${rows.length}`);
+  if (!rows.length) {
+    console.log("  (none)");
+    return;
+  }
+  console.log("  " + header.map(([label, width]) => pad(label, width)).join(" "));
+  rows.forEach((item) => console.log("  " + toLine(item).map((cell, i) => pad(cell, header[i][1])).join(" ")));
+}
 
 console.log(`Database  ${file}`);
-console.log(`Row       app_state id=${row.id}`);
 console.log(`Updated   ${row.updated_at}`);
+console.log(
+  `Totals    ${list(state.office).length} tasks · ${list(state.gym).length} gym · ` +
+    `${list(state.food).length} food · ${list(state.holdings).length} holdings · ${list(state.reminders).length} alerts`
+);
+
+section("Office tasks", list(state.office), [["✓", 2], ["TITLE", 28], ["PROJECT", 14], ["DUE", 12], ["PRIORITY", 8]], (t) => [
+  t.done ? "x" : " ",
+  t.title,
+  t.project || "-",
+  t.due || "-",
+  t.priority,
+]);
+
+section("Gym sessions", list(state.gym), [["✓", 2], ["DATE", 12], ["NAME", 22], ["FOCUS", 12], ["MIN", 5]], (s) => [
+  s.done ? "x" : " ",
+  s.date,
+  s.name,
+  s.focus,
+  s.duration,
+]);
+
+section("Food", list(state.food), [["DATE", 12], ["MEAL", 10], ["NAME", 24], ["KCAL", 6], ["P/C/F", 12]], (f) => [
+  f.date,
+  f.meal,
+  f.name,
+  f.calories || f.protein * 4 + f.carbs * 4 + f.fat * 9,
+  `${f.protein}/${f.carbs}/${f.fat}`,
+]);
+
+section("Holdings", list(state.holdings), [["NAME", 22], ["TYPE", 12], ["INVESTED", 12], ["CURRENT", 12], ["P/L", 12]], (h) => {
+  const profit = Number(h.current || 0) - Number(h.invested || 0);
+  return [h.name, h.type, money(h.invested), money(h.current), profit > 0 ? `+${money(profit)}` : money(profit)];
+});
+
+section("Reminders", list(state.reminders), [["✓", 2], ["DATE", 12], ["TIME", 6], ["TITLE", 28], ["REPEAT", 8]], (r) => [
+  r.done ? "x" : " ",
+  r.date,
+  r.time,
+  r.title,
+  r.repeat,
+]);
+
 console.log("");
-console.log(`Office    ${count(state.office)} tasks (${done(state.office)} done)`);
-console.log(`Gym       ${count(state.gym)} sessions (${done(state.gym)} done)`);
-console.log(`Food      ${count(state.food)} entries`);
-console.log(`Money     ${count(state.holdings)} holdings`);
-console.log(`Alerts    ${count(state.reminders)} reminders (${done(state.reminders)} done)`);
-console.log("");
-console.log("Goals     " + JSON.stringify(state.goals));
+console.log(`Goals     ${state.goals.calories} kcal · ${state.goals.protein}P / ${state.goals.carbs}C / ${state.goals.fat}F`);

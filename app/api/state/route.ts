@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({ state: readState() });
+  return NextResponse.json({ state: await readState() });
 }
 
 export async function PUT(request: Request) {
@@ -23,10 +23,10 @@ export async function PUT(request: Request) {
   }
 
   try {
-    writeState(state);
+    await writeState(state);
   } catch (err) {
-    console.error("Could not write local database", err);
-    return NextResponse.json({ error: "Could not save to the local database." }, { status: 500 });
+    console.error("Could not write to the database", err);
+    return NextResponse.json({ error: "Could not save to the database." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

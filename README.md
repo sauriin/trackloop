@@ -36,7 +36,13 @@ npm run db         # print what is saved in data/trackloop.db (-- --raw for JSON
 
 `vercel.json` pins the **Next.js** framework preset so deployments cannot fall back to a static preset (which serves a Vercel 404). `package.json` requires Node `>=22.13.0` because `node:sqlite` is unflagged from that version.
 
-**The local database does not work on Vercel.** Serverless functions have a read-only, ephemeral filesystem, so `/api/state` will refuse writes there and the app falls back to saving in that browser's `localStorage` (an error toast appears the first time a change cannot be stored). To keep data in a real database on Vercel you need a hosted one (Postgres, Turso/libSQL, …). SQLite is meant for self-hosting with `next start` and a persistent disk, where it works exactly as described below.
+**On Vercel, connect a Postgres database.** Serverless functions have a read-only, ephemeral filesystem, so the SQLite file cannot be written there. Use the Vercel Marketplace:
+
+1. Vercel project → **Storage → Create Database → Neon** (free plan), and connect it to this project.
+2. The integration injects `DATABASE_URL` (plus `POSTGRES_URL`); no code change or manual schema is needed — the table is created on first request.
+3. Redeploy.
+
+With it set, `/api/state` stores the state row in Postgres instead of a file. Without it the deployment falls back to that browser's `localStorage` (an error toast appears the first time a change cannot be stored).
 
 The PWA side is deployment-friendly: `app/manifest.ts` + `public/sw.js` provide the installable app.
 
@@ -57,7 +63,7 @@ TrackLoop checks reminders every 20 seconds while the app is open (and again whe
 
 ## Data & privacy
 
-Everything is stored in a local SQLite database at `data/trackloop.db` (git-ignored), accessed through `/api/state` on the same machine. `localStorage` is only an offline cache of the latest state, and existing browser data is migrated into SQLite on first load. Nothing leaves your machine.
+Everything is stored in one database row behind `/api/state`: a local SQLite file at `data/trackloop.db` (git-ignored) by default, or Postgres/Neon when `DATABASE_URL` is set. `localStorage` is only an offline cache of the latest state, and existing browser data is migrated into the database on first load. With the local file nothing leaves your machine; with Postgres only that state row is sent to your database. There is no sign-in yet, so a deployment shares one state row between everyone who opens it.
 
 To reset everything, stop the app and delete `data/trackloop.db`; the browser cache is replaced on the next save.
 
