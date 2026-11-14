@@ -1,103 +1,80 @@
 # TrackLoop
 
-A single mobile-first tracker for **office tasks, gym, nutrition (calories/protein/carbs/fat), investments and reminders** — with a daily dashboard and phone notifications.
-
-Pure static web app: HTML + CSS + ES modules. No build step, no backend, no accounts, no package install. Install it to your phone's home screen, use it offline, and your data stays in the browser's local storage.
+A personal daily tracker for **office tasks, gym, nutrition (calories + macros), investments and reminders** — built with Next.js 16 (App Router), React 19, TypeScript and Tailwind CSS 4. Data lives in your browser's `localStorage`, so there is no sign-up, no backend and no database to run.
 
 ## Features
 
-| Screen | What it does |
-| --- | --- |
-| **Today** | Greeting, open-item count, everything due today (office + gym + reminders) in one checkable list, quick-add, calories/protein progress, portfolio value. |
-| **Office** | Tasks with project, priority and due date; open/done/all filters; overdue highlighting. |
-| **Gym** | Log sessions (focus, duration, notes), weekly sessions, weekly minutes, day streak, history. |
-| **Food** | Per-day log of protein/carbs/fat (calories auto-calculated when blank), calorie and macro bars against editable daily goals, day navigation. |
-| **Money** | Holdings with invested vs. current value, total P/L and %, allocation by type, inline value updates. |
-| **Alerts** | One-off, daily and weekly reminders, notification permission controls and a test notification. |
-
-## Deploy to Vercel
-
-The repo is already Vercel-ready (`vercel.json` sets service-worker and icon cache headers). Pick one:
-
-**A. Import the repo (recommended)**
-1. Push this repo to GitHub.
-2. vercel.com → **Add New… → Project** → import the repo.
-3. Framework preset: **Other**. Build command: **empty**. Output directory: **`.`** (root). → **Deploy**.
-
-**B. From the terminal**
-```bash
-npx vercel          # preview URL
-npx vercel --prod   # production URL
-```
-
-Either way you get an `https://<project>.vercel.app` URL. HTTPS is required for the installable app and for notifications, and Vercel provides it automatically.
-
-> GitHub Pages works too: Settings → Pages → Deploy from branch → `main` / root.
-
-## Install it on your phone
-
-1. Open your deployed URL (or `http://localhost:5173` for local testing) on the phone.
-2. **Android / Chrome:** menu → **Install app** (or the ⬇ button in the header).
-   **iPhone / Safari:** Share → **Add to Home Screen**.
-3. Launch it from the home screen — it opens full-screen without browser chrome.
-4. Tap **🔔** and allow notifications.
+- **Today** — one combined list of due tasks, planned workouts and reminders, quick-add, plus calories / protein / portfolio summaries.
+- **Office** — tasks with project, priority, due date, done state and open/done/all filters.
+- **Gym** — sessions with focus, duration and notes; weekly count, minutes and current streak.
+- **Nutrition** — per-day food log with automatic calorie calculation from macros, macro progress bars and editable daily goals.
+- **Investments** — holdings with invested vs current value, live P/L, allocation by asset type, inline value updates.
+- **Reminders** — one-off, daily or weekly alerts with browser notifications.
+- **PWA** — installable on phone and desktop, offline app shell via service worker, dark UI with a bottom tab bar.
 
 ## Run locally
 
-ES modules and service workers need an HTTP origin, so double-clicking `index.html` will not work.
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+
+Other scripts:
 
 ```bash
-npx serve . -l 5173
-# open http://localhost:5173
+npm run build      # production build
+npm run start      # serve the production build
+npm run typecheck  # tsc --noEmit
 ```
 
-Any static server is fine (`npx http-server`, VS Code Live Server, etc.).
+## Deploy to Vercel
 
-## About notifications
+1. Push this repo to GitHub.
+2. In Vercel, **Add New → Project**, import the repo, keep the detected **Next.js** preset and click **Deploy**.
+3. No environment variables are required.
 
-Reminders are checked in the browser:
+The app is fully static-friendly: every route is prerendered, and `app/manifest.ts` + `public/sw.js` provide the installable PWA.
 
-- while the app is open (foreground or background tab) it checks every 20 seconds;
-- when installed, the service worker shows the alert, so it lands on your lock screen;
-- "Check due now" forces a check, and reminders up to 12 hours late still fire.
+## Install on your phone
 
-A static app cannot wake you when it has been fully closed for a long time (iOS suspends web apps). Guaranteed background push needs a server that sends Web Push messages to a subscription — deliberately left out so this deploys anywhere for free in one step.
+- **Android / Chrome**: open the deployed URL → menu **⋮ → Add to Home screen / Install app**.
+- **iPhone / Safari** (iOS 16.4+): open the URL → **Share → Add to Home Screen**, then open TrackLoop from the Home Screen icon. Notifications only work in the installed app.
 
-## Data
+The header shows an install button when the browser offers an install prompt.
 
-Everything lives under the `trackloop.v1` key in `localStorage`:
+## Notifications — how far they go
 
-```js
-{ version, goals, office[], gym[], food[], holdings[], reminders[], notified }
+TrackLoop checks reminders every 20 seconds while the app is open (and again when it regains focus). Tapping the 🔔 in the header asks for permission; **Alerts** also has a test notification button.
+
+- Alerts fire reliably while the app is open.
+- An installed PWA can keep running in the background for a while, but browsers may suspend it.
+- **Guaranteed** delivery when the app is fully closed needs a server with Web Push (VAPID keys, a subscription store and a scheduled job). That would add a backend; it is intentionally out of scope here.
+
+## Data & privacy
+
+Everything is stored locally under the `trackloop.v1` key in `localStorage`. Clearing site data or using another browser starts empty. Nothing is sent anywhere.
+
+## Project structure
+
 ```
-
-Data is per-browser and per-device; clearing site data clears the tracker. Export/import is not built in yet.
-
-## Project layout
-
+app/
+  layout.tsx        root layout, metadata, PWA meta
+  globals.css       Tailwind 4 theme tokens + component classes
+  manifest.ts       web app manifest (/manifest.webmanifest)
+  page.tsx          Today
+  office|gym|nutrition|money|alerts/page.tsx
+components/
+  app-shell.tsx     header, bottom nav, SW registration, reminder ticker
+  dashboard.tsx     Today screen
+  office.tsx gym.tsx nutrition.tsx money.tsx alerts.tsx
+  ui.tsx            card / stat / progress / pill primitives
+lib/
+  types.ts          shared data model
+  store.ts          localStorage store + useAppState()
+  derive.ts         totals, portfolio, streak, today's open items
+  dates.ts          local-time date and number helpers
+  notifications.ts  occurrence math, permission, due-reminder ticker
+public/
+  sw.js             service worker (offline shell + notification display)
+  icons/            PNG icons (192, 512, maskable, Apple touch)
 ```
-index.html              app shell, logo and tab bar
-styles.css              design system, mobile-first dark theme
-manifest.webmanifest    PWA metadata (standalone, icons, theme)
-vercel.json             static deploy + cache headers
-sw.js                   offline cache + notification display
-icon.svg                vector mark
-icons/                  PNG app icons (192, 512, maskable, Apple 180)
-js/app.js               router, install prompt, notification bell
-js/store.js             state, persistence, date/number helpers
-js/ui.js                tiny DOM helpers
-js/dashboard.js         Today screen
-js/office.js            office tasks
-js/gym.js               gym sessions
-js/nutrition.js         food log + goals
-js/investments.js       portfolio
-js/reminders.js         reminders screen
-js/notifications.js     permissions, occurrences, reminder ticker
-```
-
-## Ideas for later
-
-- JSON export / import for backups, and optional cross-device sync.
-- Charts for weight, calories and portfolio over time.
-- Recurring gym templates with per-exercise logging.
-- Real background push via Web Push + a tiny server.
