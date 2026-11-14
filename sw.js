@@ -1,10 +1,13 @@
-const CACHE = "trackloop-v1";
+const CACHE = "trackloop-v2";
 const SHELL = [
   "./",
-  "./index.html",
   "./styles.css",
   "./manifest.webmanifest",
   "./icon.svg",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png",
   "./js/app.js",
   "./js/store.js",
   "./js/ui.js",
