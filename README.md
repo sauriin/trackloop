@@ -25,6 +25,7 @@ Other scripts:
 npm run build      # production build
 npm run start      # serve the production build
 npm run typecheck  # tsc --noEmit
+npm run db         # print what is saved in data/trackloop.db (-- --raw for JSON)
 ```
 
 ## Deploy to Vercel
@@ -33,7 +34,11 @@ npm run typecheck  # tsc --noEmit
 2. In Vercel, **Add New → Project**, import the repo, keep the detected **Next.js** preset and click **Deploy**.
 3. No environment variables are required.
 
-The app is fully static-friendly: every route is prerendered, and `app/manifest.ts` + `public/sw.js` provide the installable PWA.
+`vercel.json` pins the **Next.js** framework preset so deployments cannot fall back to a static preset (which serves a Vercel 404). `package.json` requires Node `>=22.13.0` because `node:sqlite` is unflagged from that version.
+
+**The local database does not work on Vercel.** Serverless functions have a read-only, ephemeral filesystem, so `/api/state` will refuse writes there and the app falls back to saving in that browser's `localStorage` (an error toast appears the first time a change cannot be stored). To keep data in a real database on Vercel you need a hosted one (Postgres, Turso/libSQL, …). SQLite is meant for self-hosting with `next start` and a persistent disk, where it works exactly as described below.
+
+The PWA side is deployment-friendly: `app/manifest.ts` + `public/sw.js` provide the installable app.
 
 ## Install on your phone
 

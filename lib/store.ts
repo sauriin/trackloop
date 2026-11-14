@@ -82,9 +82,15 @@ function writeCache() {
 let saveTimer: number | null = null;
 let saving = false;
 let dirty = false;
-let lastSaveFailed = false;
+let failureNotified = false;
 
-async function persistNow() {
+/**
+ * Save the current state.
+ * `quiet` skips the failure toast — used for background work (migrating the
+ * browser copy on load, flushing on pagehide) so a read-only server does not
+ * pop the same message on every reload. Failures from a user action always toast.
+ */
+async function persistNow(quiet = false) {
   if (!hydrated) return;
   if (saving) {
     dirty = true;
@@ -99,14 +105,14 @@ async function persistNow() {
       cache: "no-store",
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    if (lastSaveFailed) {
-      lastSaveFailed = false;
+    if (failureNotified) {
+      failureNotified = false;
       toast("Database reconnected — your changes are saved.", "success");
     }
   } catch (err) {
     console.warn("Local database unavailable — changes kept in the browser cache.", err);
-    if (!lastSaveFailed) {
-      lastSaveFailed = true;
+    if (!quiet && !failureNotified) {
+      failureNotified = true;
       toast("Couldn't save to the local database — kept in the browser.", "error");
     }
   } finally {
@@ -158,7 +164,7 @@ async function load() {
     loaded = true;
     if (changedBeforeLoad) {
       changedBeforeLoad = false;
-      void persistNow();
+      void persistNow(true);
     }
   }
 }
@@ -193,7 +199,7 @@ export function useAppState(): AppState {
       if (saveTimer !== null) {
         window.clearTimeout(saveTimer);
         saveTimer = null;
-        void persistNow();
+        void persistNow(true);
       }
     };
     const retry = () => void persistNow();
