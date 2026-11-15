@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Database, Download, Plus, Trash2, Upload, X } from "lucide-react";
+import { Database, Download, LogOut, Plus, Trash2, Upload, X } from "lucide-react";
 import { useTasks } from "@/components/task-provider";
 import { db } from "@/lib/db";
 import { CATEGORIES, CATEGORY_DOT, type Category, type Task } from "@/lib/types";
@@ -134,6 +134,14 @@ export function AdminView() {
     }
   }
 
+  async function signOut() {
+    try {
+      await fetch("/api/admin-auth", { method: "DELETE" });
+    } finally {
+      window.location.href = "/";
+    }
+  }
+
   function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -164,14 +172,24 @@ export function AdminView() {
             Full read and write access to the table this app uses.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setCreating((value) => !value)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-canvas transition-opacity hover:opacity-90 sm:w-auto"
-        >
-          <Plus className="size-4" strokeWidth={2.5} />
-          Add record
-        </button>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setCreating((value) => !value)}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-canvas transition-opacity hover:opacity-90 sm:flex-none"
+          >
+            <Plus className="size-4" strokeWidth={2.5} />
+            Add record
+          </button>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            title="Sign out of the admin console"
+            className={toolbarButton}
+          >
+            <LogOut className="size-4" /> Sign out
+          </button>
+        </div>
       </header>
 
       <section className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">

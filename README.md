@@ -32,7 +32,9 @@ npm run db         # print what is saved in data/trackloop.db (-- --raw for JSON
 
 1. Push this repo to GitHub.
 2. In Vercel, **Add New → Project**, import the repo, keep the detected **Next.js** preset and click **Deploy**.
-3. No environment variables are required.
+3. Set one environment variable: **`ADMIN_PASSWORD`** (Production, and Preview/Development if you use them). The `/admin` console is disabled until it exists; opening Admin then asks for that password in the app and keeps a signed 8-hour session. Locally, put it in `.env.local` (see `.env.example`).
+
+Adding or changing `ADMIN_PASSWORD` only takes effect after a redeploy. `.env.local` is never uploaded, so it does not configure the deployed site.
 
 `vercel.json` pins the **Next.js** framework preset so deployments cannot fall back to a static preset (which serves a Vercel 404). `package.json` requires Node `>=22.13.0` because `node:sqlite` is unflagged from that version.
 
