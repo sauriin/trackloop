@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { db, migrateLegacyTasks } from "@/lib/db";
@@ -53,6 +54,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [hydrated, setHydrated] = useState(false);
 
+  // Mirror of `tasks` that callbacks can read without listing `tasks` in their
+  // dependencies, so every mutation stays referentially stable for memoized
+  // consumers.
+  const tasksRef = useRef<Task[]>(tasks);
+
+  const commit = useCallback((next: Task[]) => {
+    tasksRef.current = next;
+    setTasks(next);
+  }, []);
+
   useEffect(() => {
     let active = true;
 
@@ -60,7 +71,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       try {
         await migrateLegacyTasks();
         const stored = await db.tasks.toArray();
-        if (active) setTasks(stored);
+        if (active) commit(stored);
       } catch (error) {
         console.warn("Could not open the task database", error);
       } finally {
@@ -72,60 +83,81 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [commit]);
 
-  const addTask = useCallback((draft: TaskDraft) => {
-    const now = new Date().toISOString();
-    const task: Task = {
-      id: newId(),
-      title: draft.title.trim(),
-      description: draft.description.trim(),
-      category: draft.category,
-      done: false,
-      createdAt: now,
-      updatedAt: now,
-    };
+  // State is replaced (never mutated) and IndexedDB writes happen outside the
+  // updater, so React can re-run renders freely without repeating writes.
+  const addTask = useCallback(
+    (draft: TaskDraft) => {
+      const now = new Date().toISOString();
+      const task: Task = {
+        id: newId(),
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        category: draft.category,
+        done: false,
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    setTasks((current) => [task, ...current]);
-    void db.tasks.add(task).catch(reportWriteError);
-    return task;
-  }, []);
+      commit([task, ...tasksRef.current]);
+      void db.tasks.add(task).catch(reportWriteError);
+      return task;
+    },
+    [commit],
+  );
 
-  const updateTask = useCallback((id: string, draft: TaskDraft) => {
-    const patch = {
-      title: draft.title.trim(),
-      description: draft.description.trim(),
-      category: draft.category,
-      updatedAt: new Date().toISOString(),
-    };
+  const updateTask = useCallback(
+    (id: string, draft: TaskDraft) => {
+      const patch = {
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        category: draft.category,
+        updatedAt: new Date().toISOString(),
+      };
 
-    setTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, ...patch } : task)),
-    );
-    void db.tasks.update(id, patch).catch(reportWriteError);
-  }, []);
+      commit(
+        tasksRef.current.map((task) =>
+          task.id === id ? { ...task, ...patch } : task,
+        ),
+      );
+      void db.tasks.update(id, patch).catch(reportWriteError);
+    },
+    [commit],
+  );
 
-  const toggleTask = useCallback((id: string) => {
-    setTasks((current) =>
-      current.map((task) => {
-        if (task.id !== id) return task;
-        const patch = { done: !task.done, updatedAt: new Date().toISOString() };
-        void db.tasks.update(id, patch).catch(reportWriteError);
-        return { ...task, ...patch };
-      }),
-    );
-  }, []);
+  const toggleTask = useCallback(
+    (id: string) => {
+      const task = tasksRef.current.find((candidate) => candidate.id === id);
+      if (!task) return;
 
-  const deleteTask = useCallback((id: string) => {
-    setTasks((current) => current.filter((task) => task.id !== id));
-    void db.tasks.delete(id).catch(reportWriteError);
-  }, []);
+      const patch = { done: !task.done, updatedAt: new Date().toISOString() };
+      commit(
+        tasksRef.current.map((candidate) =>
+          candidate.id === id ? { ...candidate, ...patch } : candidate,
+        ),
+      );
+      void db.tasks.update(id, patch).catch(reportWriteError);
+    },
+    [commit],
+  );
 
-  const replaceTasks = useCallback(async (next: Task[]) => {
-    await db.tasks.clear();
-    if (next.length > 0) await db.tasks.bulkAdd(next);
-    setTasks(sortTasks(next));
-  }, []);
+  const deleteTask = useCallback(
+    (id: string) => {
+      commit(tasksRef.current.filter((task) => task.id !== id));
+      void db.tasks.delete(id).catch(reportWriteError);
+    },
+    [commit],
+  );
+
+  const replaceTasks = useCallback(
+    async (next: Task[]) => {
+      await db.tasks.clear();
+      if (next.length > 0) await db.tasks.bulkAdd(next);
+      commit(sortTasks(next));
+    },
+    [commit],
+  );
 
   const visibleTasks = useMemo(() => {
     const matching =

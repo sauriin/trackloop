@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Plus, ListChecks } from "lucide-react";
 import { TaskForm } from "@/components/task-form";
 import { TaskItem } from "@/components/task-item";
@@ -39,12 +39,25 @@ export function TasksView() {
     setEditingId(null);
   }
 
-  function handleDelete(id: string, title: string) {
-    if (window.confirm(`Delete "${title}"?`)) {
+  // Stable references keep the memoized rows from re-rendering needlessly.
+  const openCreate = useCallback(() => {
+    setCreating(true);
+    setEditingId(null);
+  }, []);
+
+  const openEdit = useCallback((id: string) => {
+    setCreating(false);
+    setEditingId(id);
+  }, []);
+
+  const handleDelete = useCallback(
+    (id: string, title: string) => {
+      if (!window.confirm(`Delete "${title}"?`)) return;
       deleteTask(id);
-      if (editingId === id) setEditingId(null);
-    }
-  }
+      setEditingId((current) => (current === id ? null : current));
+    },
+    [deleteTask],
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -59,10 +72,7 @@ export function TasksView() {
         </div>
         <button
           type="button"
-          onClick={() => {
-            setCreating(true);
-            setEditingId(null);
-          }}
+          onClick={openCreate}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-canvas transition-opacity hover:opacity-90 sm:w-auto"
         >
           <Plus className="size-4" strokeWidth={2.5} />
@@ -93,12 +103,9 @@ export function TasksView() {
             <TaskItem
               key={task.id}
               task={task}
-              onToggle={() => toggleTask(task.id)}
-              onEdit={() => {
-                setCreating(false);
-                setEditingId(task.id);
-              }}
-              onDelete={() => handleDelete(task.id, task.title)}
+              onToggle={toggleTask}
+              onEdit={openEdit}
+              onDelete={handleDelete}
             />
           ))}
         </ul>

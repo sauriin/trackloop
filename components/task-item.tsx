@@ -1,24 +1,29 @@
 "use client";
 
+import { memo } from "react";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { CATEGORY_DOT, type Task } from "@/lib/types";
 
-export function TaskItem({
+/**
+ * Memoized so that changing one task only re-renders that row: the handlers are
+ * stable (they take the id) and `task` is a fresh object only when it changed.
+ */
+export const TaskItem = memo(function TaskItem({
   task,
   onToggle,
   onEdit,
   onDelete,
 }: {
   task: Task;
-  onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onToggle: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
 }) {
   return (
     <li className="group flex items-start gap-2.5 rounded-xl border border-line bg-panel px-3 py-3 sm:gap-3 sm:px-4">
       <button
         type="button"
-        onClick={onToggle}
+        onClick={() => onToggle(task.id)}
         role="checkbox"
         aria-checked={task.done}
         aria-label={task.done ? `Mark "${task.title}" as open` : `Mark "${task.title}" as done`}
@@ -51,7 +56,7 @@ export function TaskItem({
       <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-70 sm:group-hover:opacity-100">
         <button
           type="button"
-          onClick={onEdit}
+          onClick={() => onEdit(task.id)}
           aria-label={`Edit "${task.title}"`}
           className="rounded-md p-1.5 text-muted transition-colors hover:bg-panel-2 hover:text-slate-100"
         >
@@ -59,7 +64,7 @@ export function TaskItem({
         </button>
         <button
           type="button"
-          onClick={onDelete}
+          onClick={() => onDelete(task.id, task.title)}
           aria-label={`Delete "${task.title}"`}
           className="rounded-md p-1.5 text-muted transition-colors hover:bg-panel-2 hover:text-rose-400"
         >
@@ -68,4 +73,4 @@ export function TaskItem({
       </div>
     </li>
   );
-}
+});
