@@ -1,11 +1,15 @@
 "use client";
 
-import { CheckCircle2, LayoutList } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { CheckCircle2, Database, LayoutList } from "lucide-react";
 import { useTasks } from "@/components/task-provider";
 import { CATEGORIES, CATEGORY_DOT } from "@/lib/types";
 
 export function Sidebar() {
   const { filter, setFilter, counts, tasks } = useTasks();
+  const pathname = usePathname();
+  const onAdmin = pathname?.startsWith("/admin") ?? false;
   const open = counts.all;
   const done = tasks.filter((task) => task.done).length;
 
@@ -51,6 +55,24 @@ export function Sidebar() {
           ))}
         </div>
       </nav>
+
+      <div className="border-t border-line px-1.5 py-2 sm:px-2 lg:px-3">
+        <Link
+          href="/admin"
+          title="Admin — database records"
+          aria-current={onAdmin ? "page" : undefined}
+          className={`flex w-full items-center justify-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors sm:px-2.5 lg:justify-start lg:px-3 ${
+            onAdmin
+              ? "bg-accent-soft text-white"
+              : "text-muted hover:bg-panel-2 hover:text-slate-200"
+          }`}
+        >
+          <span className="grid size-5 place-items-center">
+            <Database className="size-4 shrink-0" />
+          </span>
+          <span className="hidden flex-1 truncate text-left lg:inline">Admin</span>
+        </Link>
+      </div>
 
       <div className="border-t border-line px-2 py-3 text-xs text-muted sm:px-3 sm:py-4 lg:px-5">
         <p className="hidden lg:block">

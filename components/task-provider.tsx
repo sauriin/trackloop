@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { db, migrateLegacyTasks } from "@/lib/db";
 import { CATEGORIES, type Category, type Task, type TaskDraft } from "@/lib/types";
 
 export type TaskFilter = Category | "all";
@@ -18,14 +19,14 @@ type TaskContextValue = {
   setFilter: (filter: TaskFilter) => void;
   visibleTasks: Task[];
   counts: Record<TaskFilter, number>;
-  addTask: (draft: TaskDraft) => void;
+  addTask: (draft: TaskDraft) => Task;
   updateTask: (id: string, draft: TaskDraft) => void;
   toggleTask: (id: string) => void;
   deleteTask: (id: string) => void;
+  /** Admin helper: replaces the whole table in one shot. */
+  replaceTasks: (next: Task[]) => Promise<void>;
   hydrated: boolean;
 };
-
-const STORAGE_KEY = "daily.tasks.v1";
 
 const TaskContext = createContext<TaskContextValue | null>(null);
 
@@ -43,77 +44,87 @@ function sortTasks(tasks: Task[]) {
   });
 }
 
+function reportWriteError(error: unknown) {
+  console.warn("Could not save task", error);
+}
+
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw);
-        if (Array.isArray(parsed)) setTasks(parsed as Task[]);
-      }
-    } catch (error) {
-      console.warn("Could not read saved tasks", error);
-    }
-    setHydrated(true);
-  }, []);
+    let active = true;
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    } catch (error) {
-      console.warn("Could not save tasks", error);
+    async function load() {
+      try {
+        await migrateLegacyTasks();
+        const stored = await db.tasks.toArray();
+        if (active) setTasks(stored);
+      } catch (error) {
+        console.warn("Could not open the task database", error);
+      } finally {
+        if (active) setHydrated(true);
+      }
     }
-  }, [tasks, hydrated]);
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const addTask = useCallback((draft: TaskDraft) => {
     const now = new Date().toISOString();
-    setTasks((current) => [
-      {
-        id: newId(),
-        title: draft.title.trim(),
-        description: draft.description.trim(),
-        category: draft.category,
-        done: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...current,
-    ]);
+    const task: Task = {
+      id: newId(),
+      title: draft.title.trim(),
+      description: draft.description.trim(),
+      category: draft.category,
+      done: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setTasks((current) => [task, ...current]);
+    void db.tasks.add(task).catch(reportWriteError);
+    return task;
   }, []);
 
   const updateTask = useCallback((id: string, draft: TaskDraft) => {
+    const patch = {
+      title: draft.title.trim(),
+      description: draft.description.trim(),
+      category: draft.category,
+      updatedAt: new Date().toISOString(),
+    };
+
     setTasks((current) =>
-      current.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              title: draft.title.trim(),
-              description: draft.description.trim(),
-              category: draft.category,
-              updatedAt: new Date().toISOString(),
-            }
-          : task,
-      ),
+      current.map((task) => (task.id === id ? { ...task, ...patch } : task)),
     );
+    void db.tasks.update(id, patch).catch(reportWriteError);
   }, []);
 
   const toggleTask = useCallback((id: string) => {
     setTasks((current) =>
-      current.map((task) =>
-        task.id === id
-          ? { ...task, done: !task.done, updatedAt: new Date().toISOString() }
-          : task,
-      ),
+      current.map((task) => {
+        if (task.id !== id) return task;
+        const patch = { done: !task.done, updatedAt: new Date().toISOString() };
+        void db.tasks.update(id, patch).catch(reportWriteError);
+        return { ...task, ...patch };
+      }),
     );
   }, []);
 
   const deleteTask = useCallback((id: string) => {
     setTasks((current) => current.filter((task) => task.id !== id));
+    void db.tasks.delete(id).catch(reportWriteError);
+  }, []);
+
+  const replaceTasks = useCallback(async (next: Task[]) => {
+    await db.tasks.clear();
+    if (next.length > 0) await db.tasks.bulkAdd(next);
+    setTasks(sortTasks(next));
   }, []);
 
   const visibleTasks = useMemo(() => {
@@ -144,9 +155,21 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       updateTask,
       toggleTask,
       deleteTask,
+      replaceTasks,
       hydrated,
     }),
-    [tasks, filter, visibleTasks, counts, addTask, updateTask, toggleTask, deleteTask, hydrated],
+    [
+      tasks,
+      filter,
+      visibleTasks,
+      counts,
+      addTask,
+      updateTask,
+      toggleTask,
+      deleteTask,
+      replaceTasks,
+      hydrated,
+    ],
   );
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
