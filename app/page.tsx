@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { Dashboard } from "@/components/dashboard";
+import { TasksView } from "@/components/tasks-view";
 
-export const metadata: Metadata = { title: "Today" };
-
-export default function TodayPage() {
-  return <Dashboard />;
+export default function Page() {
+  return <TasksView />;
 }

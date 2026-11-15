@@ -1,51 +1,31 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/app-shell";
+import { Sidebar } from "@/components/sidebar";
+import { TaskProvider } from "@/components/task-provider";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://trackloop.local"),
-  title: {
-    default: "TrackLoop — daily tracker",
-    template: "%s · TrackLoop",
-  },
-  description: "Track office tasks, gym, nutrition, investments and reminders in one place.",
-  applicationName: "TrackLoop",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    title: "TrackLoop",
-    statusBarStyle: "black-translucent",
-  },
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
-  },
-  formatDetection: { telephone: false },
+  title: "Daily — task tracker",
+  description: "Track daily tasks across office, home, family and more.",
 };
 
 export const viewport: Viewport = {
+  themeColor: "#0b0e14",
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
-  themeColor: "#0b0812",
-  colorScheme: "dark",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-dvh">
-        {process.env.NODE_ENV !== "production" && (
-          // Dev-only: a leftover service worker can serve stale chunks and break
-          // hydration. Run before the app so a broken bundle can still recover.
-          <script
-            dangerouslySetInnerHTML={{
-              __html:
-                "if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})})}",
-            }}
-          />
-        )}
-        <AppShell>{children}</AppShell>
+      <body className="font-sans">
+        <TaskProvider>
+          <div className="flex min-h-dvh">
+            <Sidebar />
+            <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6 md:px-8 lg:px-12 lg:py-10">
+              {children}
+            </main>
+          </div>
+        </TaskProvider>
       </body>
     </html>
   );

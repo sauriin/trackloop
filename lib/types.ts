@@ -1,97 +1,35 @@
-export type Priority = "low" | "normal" | "high";
-export type Repeat = "none" | "daily" | "weekly";
+export const CATEGORIES = [
+  "Office",
+  "Home",
+  "Family",
+  "Personal",
+  "Health",
+  "Finance",
+] as const;
 
-export type Meal = "Breakfast" | "Lunch" | "Dinner" | "Snack";
+export type Category = (typeof CATEGORIES)[number];
 
-export type HoldingType =
-  | "Stocks"
-  | "Mutual fund"
-  | "ETF"
-  | "Crypto"
-  | "Gold"
-  | "FD / Debt"
-  | "Other";
-
-export type GymFocus =
-  | "Push"
-  | "Pull"
-  | "Legs"
-  | "Upper"
-  | "Lower"
-  | "Cardio"
-  | "Full body"
-  | "Mobility";
-
-export interface OfficeTask {
+export type Task = {
   id: string;
   title: string;
-  project: string;
-  priority: Priority;
-  due: string; // ISO yyyy-mm-dd, "" when none
+  description: string;
+  category: Category;
   done: boolean;
   createdAt: string;
-  doneAt?: string | null;
-}
+  updatedAt: string;
+};
 
-export interface GymSession {
-  id: string;
-  date: string;
-  name: string;
-  focus: GymFocus;
-  duration: number; // minutes
-  notes: string;
-  done: boolean;
-}
-
-export interface FoodEntry {
-  id: string;
-  date: string;
-  meal: Meal;
-  name: string;
-  protein: number;
-  carbs: number;
-  fat: number;
-  calories: number; // 0 = derive from macros
-}
-
-export interface Holding {
-  id: string;
-  name: string;
-  type: HoldingType;
-  invested: number;
-  current: number;
-}
-
-export interface Reminder {
-  id: string;
+export type TaskDraft = {
   title: string;
-  date: string;
-  time: string; // HH:MM
-  repeat: Repeat;
-  done: boolean;
-  lastFired: string | null;
-}
+  description: string;
+  category: Category;
+};
 
-export interface Goals {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
-
-export interface AppState {
-  version: number;
-  goals: Goals;
-  office: OfficeTask[];
-  gym: GymSession[];
-  food: FoodEntry[];
-  holdings: Holding[];
-  reminders: Reminder[];
-}
-
-export interface Totals {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
+export const CATEGORY_DOT: Record<Category, string> = {
+  Office: "bg-[#6d7cff]",
+  Home: "bg-[#34d399]",
+  Family: "bg-[#f472b6]",
+  Personal: "bg-[#fbbf24]",
+  Health: "bg-[#22d3ee]",
+  Finance: "bg-[#a78bfa]",
+};
