@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Database,
+  Dumbbell,
   LayoutList,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { useTasks } from "@/components/task-provider";
+import { useTasks, type TaskFilter } from "@/components/task-provider";
 import { CATEGORIES, CATEGORY_DOT } from "@/lib/types";
 
 /** Remembers the manual collapse choice across visits. */
@@ -19,7 +20,17 @@ const COLLAPSE_KEY = "daily.sidebar.collapsed";
 export function Sidebar() {
   const { filter, setFilter, counts, tasks } = useTasks();
   const pathname = usePathname();
+  const router = useRouter();
+  const onTasks = pathname === "/";
+  const onFitness = pathname?.startsWith("/fitness") ?? false;
   const onAdmin = pathname?.startsWith("/admin") ?? false;
+
+  // Task filters only live on the tasks page, so follow the click when on
+  // another screen (e.g. Fitness) instead of silently changing hidden state.
+  function selectFilter(next: TaskFilter) {
+    setFilter(next);
+    if (!onTasks) router.push("/");
+  }
   const open = counts.all;
   const done = tasks.filter((task) => task.done).length;
 
@@ -61,24 +72,42 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-1.5 pb-4 sm:px-2 lg:px-3">
         <NavButton
-          active={filter === "all"}
+          active={onTasks && filter === "all"}
           label="All tasks"
           count={counts.all}
-          onClick={() => setFilter("all")}
+          onClick={() => selectFilter("all")}
           icon={<LayoutList className="size-4 shrink-0" />}
           labelClass={labelClass}
           collapsed={collapsed}
         />
+
+        <Link
+          href="/fitness"
+          title="Fitness — workouts, weight and steps"
+          aria-current={onFitness ? "page" : undefined}
+          className={`flex w-full items-center justify-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors sm:px-2.5 lg:px-3 ${
+            collapsed ? "lg:justify-center" : "lg:justify-start"
+          } ${
+            onFitness
+              ? "bg-accent-soft text-white"
+              : "text-muted hover:bg-panel-2 hover:text-slate-200"
+          }`}
+        >
+          <span className="grid size-5 place-items-center">
+            <Dumbbell className="size-4 shrink-0" />
+          </span>
+          <span className={labelClass}>Fitness</span>
+        </Link>
 
         <p className={`${headingClass} pt-5`}>Categories</p>
         <div className="space-y-1 pt-3 lg:pt-0">
           {CATEGORIES.map((category) => (
             <NavButton
               key={category}
-              active={filter === category}
+              active={onTasks && filter === category}
               label={category}
               count={counts[category]}
-              onClick={() => setFilter(category)}
+              onClick={() => selectFilter(category)}
               icon={
                 <span
                   className={`size-2 shrink-0 rounded-full ${CATEGORY_DOT[category]}`}

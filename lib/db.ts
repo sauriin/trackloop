@@ -1,13 +1,21 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { Task } from "@/lib/types";
+import type { DayMetrics, Task, Workout } from "@/lib/types";
 
-/** One IndexedDB table holding every task. */
+/** One IndexedDB database holding tasks plus fitness logs. */
 export const db = new Dexie("daily") as Dexie & {
   tasks: EntityTable<Task, "id">;
+  workouts: EntityTable<Workout, "id">;
+  metrics: EntityTable<DayMetrics, "date">;
 };
 
 db.version(1).stores({
   tasks: "id, category, done, updatedAt, createdAt",
+});
+
+db.version(2).stores({
+  tasks: "id, category, done, updatedAt, createdAt",
+  workouts: "id, date, createdAt",
+  metrics: "date",
 });
 
 /** Where tasks lived before the move to IndexedDB. */
